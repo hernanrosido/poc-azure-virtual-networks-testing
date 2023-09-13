@@ -1,0 +1,156 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "String"
+        },
+        "virtualNetworkId": {
+            "type": "String"
+        },
+		"subnetName": {
+            "type": "String"
+        },
+        "virtualMachineRG": {
+            "type": "String"
+        },
+		"virtualMachineName": {
+			 "type": "String"
+	    },
+		"adminPassword": {
+		"type": "SecureString"
+	    },
+    },
+    "variables": {
+        "vnetId": "[parameters('virtualNetworkId')]",
+        "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
+		"networkInterfaceName": "[concat(parameters('virtualMachineName'), '-NIC1')]",
+		"enableAcceleratedNetworking": false,
+		"virtualMachineComputerName": "[parameters('virtualMachineName')]",
+		"virtualMachineSize": "Standard_D3_v2",
+		"osDiskType": "Standard_LRS",
+		"osDiskDeleteOption": "Delete",
+		"nicDeleteOption": "Detach",
+		"adminUsername": "Cloudadmin",
+		"patchMode": "AutomaticByOS",
+		"enableHotpatching": false
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2021-03-01",
+            "name": "[variables('networkInterfaceName')]",
+            "location": "[parameters('location')]",
+	    "tags": {
+		"odt-environment": "Testing",
+		"odt-dataclassification": "undefined",
+		"odt-envid": "na",
+		"odt-owner": "hernanrosido@gmail.com",
+		"odt-deployedby": "portal",
+		"odt-reserved5": "na",
+		"odt-reserved2": "na",
+		"odt-serviceoffering": "portal",
+		"odt-srid": "na",
+		"odt-appid": "na",
+		"odt-solutionexposure": "Internal",
+		"odt-reserved3": "na",
+		"odt-reserved1": "na",
+		"odt-solution": "na",
+		"odt-reserved4": "na",
+		"odt-environmenttype": "Testing"
+		},
+	    "dependsOn": [],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic"
+                        }
+                    }
+                ],
+                "enableAcceleratedNetworking": "[variables('enableAcceleratedNetworking')]"
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2021-07-01",
+            "name": "[parameters('virtualMachineName')]",
+            "location": "[parameters('location')]",
+	    "tags": {
+		"odt-environment": "Testing",
+		"odt-dataclassification": "undefined",
+		"odt-envid": "na",
+		"odt-owner": "hernanrosido@gmail.com",
+		"odt-deployedby": "portal",
+		"odt-reserved5": "na",
+		"odt-reserved2": "na",
+		"odt-serviceoffering": "portal",
+		"odt-srid": "na",
+		"odt-appid": "na",
+		"odt-solutionexposure": "Internal",
+		"odt-reserved3": "na",
+		"odt-reserved1": "na",
+		"odt-solution": "na",
+		"odt-reserved4": "na",
+		"odt-environmenttype": "Testing"
+		},
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', variables('networkInterfaceName'))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[variables('osDiskType')]"
+                        },
+                        "deleteOption": "[variables('osDiskDeleteOption')]"
+                    },
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2012-R2-Datacenter",
+                        "version": "latest"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]",
+                            "properties": {
+                                "deleteOption": "[variables('nicDeleteOption')]"
+                            }
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "[variables('virtualMachineComputerName')]",
+                    "adminUsername": "[variables('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "windowsConfiguration": {
+                        "enableAutomaticUpdates": true,
+                        "provisionVmAgent": true,
+                        "patchSettings": {
+                            "enableHotpatching": "[variables('enableHotpatching')]",
+                            "patchMode": "[variables('patchMode')]"
+                        }
+                    }
+                },
+                "licenseType": "Windows_Server"
+            }
+        }
+    ],
+    "outputs": {
+        "adminUsername": {
+            "type": "String",
+            "value": "[variables('adminUsername')]"
+        }
+    }
+}
